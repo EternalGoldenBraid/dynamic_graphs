@@ -2,6 +2,7 @@ using Graphs, GraphMakie
 
 function gaussian_mixture_surface(;
         X, Y, 
+        # node_positions::Vector{<:Vector{<:Real}},
         node_positions::Vector{<:Vector{<:Real}},
         precisions::Vector{<:Real},
     )
@@ -20,7 +21,8 @@ function gaussian_mixture_surface(;
 end
 
 function init_graph(;n_nodes)
-    g = wheel_graph(n_nodes)
+    # g = wheel_graph(n_nodes)
+    g = barabasi_albert(n_nodes, 1)
     # g = complete_graph(n_nodes);
     return g
 end
