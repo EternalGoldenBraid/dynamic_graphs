@@ -26,14 +26,20 @@ include("utils.jl")
 
 x_dim = 300
 y_dim = 300
-n_nodes = 20
+n_pose_graphs = 3
+# n_nodes_in_pose_graph = 16
+# n_nodes = n_pose_graphs * n_nodes_in_pose_graph
+n_nodes = n_pose_graphs * NUM_NODES_PER_POSE_GRAPH
 
 # Fixed nodes
 
-n_fixed_nodes = 7
+n_fixed_nodes = 0
 # fixed_idxs = sample(1:n_nodes, n_fixed_nodes; replace=false)
 fixed_mask = [false for i in 1:n_nodes]
-fixed_mask[sample(1:n_nodes, n_fixed_nodes; replace=false)] .= true
+
+if n_fixed_nodes > 0
+    fixed_mask[sample(1:n_nodes, n_fixed_nodes; replace=false)] .= true
+end
 
 omega = 1
 a = 1.
@@ -57,9 +63,12 @@ X = x' .* ones(y_dim)
 Y = (ones(x_dim) .* y')'
 
 # Generate random node positions in a 2D space, e.g., within [-2, 2]
-node_positions = Observable([rand(x_min:0.1:x_max, 2) for _ in 1:n_nodes])
+head_positions = Observable([rand(x_min:0.1:x_max, 2) for _ in 1:n_pose_graphs])
 # node_positions = Observable(rand(-x_min:0.1:x_max, n_nodes, 2))
-node_positions_matrix = hcat(node_positions[]...)'
+head_positions_matrix = hcat(head_positions[]...)'
+
+node_positions_matrix = compute_global_positions(head_positions[])
+node_positions = Observable([node_positions_matrix[i, :] for i in 1:size(node_positions_matrix)[1]])
 
 # Generate random precisions for the nodes, e.g., within [0.1, 1.0]
 precisions = Observable(rand(0.1:0.1:1.0, n_nodes))
@@ -70,11 +79,15 @@ Z = Observable(gaussian_mixture_surface(;
            ))
 
 # construct graph
-graph = init_graph(n_nodes=n_nodes)
+graph = init_graph!(n_pose_graphs=n_pose_graphs)
 lap = laplacian_matrix(graph)
 
+print(lap)
+
 # Close incoming connections to fixed nodes.
-lap[fixed_mask,:] = zeros(n_nodes)' .* ones(n_fixed_nodes)
+if n_fixed_nodes > 0
+    lap[fixed_mask,:] = zeros(n_nodes)' .* ones(n_fixed_nodes)
+end
 
 # Plot the surface using the observable Z
 fig = Figure(size = (800, 600))
@@ -87,18 +100,18 @@ graphplot!(graph, layout=node_positions)
 
 display(fig)
 
-for t in 1:dt:duration
-    node_positions_matrix[:,:] -= delta.*(lap * node_positions_matrix)
-    node_positions_matrix[fixed_mask,:] += [a*cos(omega*t), a*sin(omega*t)]' .* ones(n_fixed_nodes)
-    node_positions[] = [node_positions_matrix[i, :] for i in 1:size(node_positions_matrix, 1)]
-
-    # Recompute surface values
-    Z[] = gaussian_mixture_surface(;
-            X=X, Y=Y, precisions=precisions[],
-            node_positions=node_positions[],
-           )
-
-    sleep(dt)  # Control animation speed
-    print("time: $t\n")
-    print("pos $node_positions_matrix")
-end
+# for t in 1:dt:duration
+#     node_positions_matrix[:,:] -= delta.*(lap * node_positions_matrix)
+#     node_positions_matrix[fixed_mask,:] += [a*cos(omega*t), a*sin(omega*t)]' .* ones(n_fixed_nodes)
+#     node_positions[] = [node_positions_matrix[i, :] for i in 1:size(node_positions_matrix, 1)]
+#
+#     # Recompute surface values
+#     Z[] = gaussian_mixture_surface(;
+#             X=X, Y=Y, precisions=precisions[],
+#             node_positions=node_positions[],
+#            )
+#
+#     sleep(dt)  # Control animation speed
+#     print("time: $t\n")
+#     print("pos $node_positions_matrix")
+# end
