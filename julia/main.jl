@@ -52,7 +52,7 @@ dt = 0.1
 duration = 20
 
 # Define parameters
-num = 50
+num = 20
 x_min = -num
 x_max = num
 y_min = -num
@@ -100,18 +100,18 @@ graphplot!(graph, layout=node_positions)
 
 display(fig)
 
-# for t in 1:dt:duration
-#     node_positions_matrix[:,:] -= delta.*(lap * node_positions_matrix)
-#     node_positions_matrix[fixed_mask,:] += [a*cos(omega*t), a*sin(omega*t)]' .* ones(n_fixed_nodes)
-#     node_positions[] = [node_positions_matrix[i, :] for i in 1:size(node_positions_matrix, 1)]
-#
-#     # Recompute surface values
-#     Z[] = gaussian_mixture_surface(;
-#             X=X, Y=Y, precisions=precisions[],
-#             node_positions=node_positions[],
-#            )
-#
-#     sleep(dt)  # Control animation speed
-#     print("time: $t\n")
-#     print("pos $node_positions_matrix")
-# end
+for t in 1:dt:duration
+    node_positions_matrix[:,:] -= delta.*(lap * node_positions_matrix)
+    node_positions_matrix[fixed_mask,:] += [a*cos(omega*t), a*sin(omega*t)]' .* ones(n_fixed_nodes)
+    node_positions[] = [node_positions_matrix[i, :] for i in 1:size(node_positions_matrix, 1)]
+
+    # Recompute surface values
+    Z[] = gaussian_mixture_surface(;
+            X=X, Y=Y, precisions=precisions[],
+            node_positions=node_positions[],
+           )
+
+    sleep(dt)  # Control animation speed
+    print("time: $t\n")
+    print("pos $node_positions_matrix")
+end

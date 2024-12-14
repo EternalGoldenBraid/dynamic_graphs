@@ -77,8 +77,17 @@ function init_graph!(;n_pose_graphs)
 
     for pose_graph_idx in 1:n_pose_graphs
 
+        prev_head_idx = nv(g)
         # g = add_pose_graph!(g)
         add_pose_graph!(g)
+
+        if pose_graph_idx > 1
+            
+            # TODO This is wrong. Not connecting heads
+            add_edge!(g, prev_head_idx,
+                prev_head_idx + NUM_NODES_PER_POSE_GRAPH
+               )
+        end
 
     end
     return g
